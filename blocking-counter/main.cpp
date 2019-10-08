@@ -12,27 +12,23 @@
 #include <chrono>
 
 
-unsigned int NUM = 1024 * 1024;
-unsigned int N_THREADS = 16;
-std::vector<std::thread> threads;
-std::vector<unsigned char> array(NUM, 0);
-unsigned int shared_counter = 0;
-std::mutex mtx;
-
-
-void thread_task_mutex() {
-    std::unique_lock<std::mutex> lock(mtx);
-    while (shared_counter < NUM){
-        array[shared_counter] += 1;
-        shared_counter++;
-        // std::this_thread::sleep_for(std::chrono::nanoseconds(10));
-    }
-}
-
-int main(int argc, const char * argv[]) {
+void lock_counter(int numTasks, int numThreads) {
+    std::vector<uint8_t> array(numTasks, 0);
+    std::vector<std::thread> threads(numThreads);
+    std::mutex mtx;
+    unsigned int shared_counter = 0;
+    unsigned int loops = numTasks / numThreads;
+    
     auto start = std::chrono::high_resolution_clock::now();
-    for (int i = 0; i < N_THREADS; i++) {
-        threads.push_back(std::thread(thread_task_mutex));
+    for (int i = 0; i < numThreads; i++) {
+        threads[i] = std::thread([&array, &mtx, &shared_counter, &loops] {
+            for (int i = 0; i < loops; i++) {
+                mtx.lock();
+                array[shared_counter++] += 1;
+                //std::this_thread::sleep_for(std::chrono::nanoseconds(10));
+                mtx.unlock();
+            }
+        });
     }
     for (auto &t: threads) {
         t.join();
@@ -40,9 +36,14 @@ int main(int argc, const char * argv[]) {
     auto end = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double, std::milli> elapsed = end - start;
     std::cout << elapsed.count() << " ms for "
-            << N_THREADS << " threads \n";
+            << numThreads << " threads \n";
+}
+
+int main(int argc, const char * argv[]) {
+    for (int i = 4; i <= 32; i *= 2)
+        lock_counter(1024 * 1024, i);
 //    for (auto a: array)
-//        std::cout << a << " ";
+//        std::cout << unsigned(a) << " ";
 
     return 0;
 }
