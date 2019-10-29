@@ -12,7 +12,7 @@
 #include <chrono>
 
 
-void lock_counter(int numTasks, int numThreads) {
+void lock_counter(int numTasks, int numThreads, bool verbose = false) {
     std::vector<uint8_t> array(numTasks, 0);
     std::vector<std::thread> threads(numThreads);
     std::mutex mtx;
@@ -21,7 +21,7 @@ void lock_counter(int numTasks, int numThreads) {
     
     auto start = std::chrono::high_resolution_clock::now();
     for (int i = 0; i < numThreads; i++) {
-        threads[i] = std::thread([&array, &mtx, &shared_counter, &loops] {
+        threads[i] = std::thread([&] {
             for (int i = 0; i < loops; i++) {
                 mtx.lock();
                 array[shared_counter++] += 1;
@@ -37,13 +37,14 @@ void lock_counter(int numTasks, int numThreads) {
     std::chrono::duration<double, std::milli> elapsed = end - start;
     std::cout << elapsed.count() << " ms for "
             << numThreads << " threads \n";
+    if (verbose)
+        for (auto a: array)
+            std::cout << unsigned(a) << " ";
 }
 
 int main(int argc, const char * argv[]) {
     for (int i = 4; i <= 32; i *= 2)
         lock_counter(1024 * 1024, i);
-//    for (auto a: array)
-//        std::cout << unsigned(a) << " ";
 
     return 0;
 }
