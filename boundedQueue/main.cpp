@@ -1,6 +1,6 @@
 //
 //  main.cpp
-//  nonBusyWaitQueue
+//  boundedQueue
 //
 //  Created by Veronika on 10/29/19.
 //  Copyright © 2019 Veronika. All rights reserved.
@@ -12,7 +12,7 @@
 #include <thread>
 using namespace std;
 
-struct CircleBuffer {
+struct BoundedBuffer {
     uint8_t *buffer;
     int capacity;
     uint8_t head;
@@ -24,14 +24,12 @@ struct CircleBuffer {
     condition_variable not_full_cv;
     condition_variable not_empty_cv;
     
-    bool is_not_empty() { return count != 0; }
-    bool is_not_full() { return count != capacity; }
     
-    CircleBuffer(int capacity): capacity(capacity), head(0), tail(0), count(0) {
+    BoundedBuffer(int capacity): capacity(capacity), head(0), tail(0), count(0) {
         buffer = new uint8_t[capacity];
     }
     
-    ~CircleBuffer() {
+    ~BoundedBuffer() {
         delete [] buffer;
     }
     
@@ -43,7 +41,6 @@ struct CircleBuffer {
         tail = (tail + 1) % capacity;
         count++;
         overall_count.fetch_add(1);
-        u_lock.unlock();
         not_empty_cv.notify_one();
     }
     
@@ -53,7 +50,6 @@ struct CircleBuffer {
             value = buffer[head];
             head = (head + 1) % capacity;
             count--;
-            u_lock.unlock();
             not_full_cv.notify_one();
             return true;
         } else {
@@ -62,7 +58,7 @@ struct CircleBuffer {
     }
 };
 
-void producer(CircleBuffer &buffer, int num_tasks, int thread_num) {
+void producer(BoundedBuffer &buffer, int num_tasks, int thread_num) {
     auto start = std::chrono::high_resolution_clock::now();
     for (int i = 0; i < num_tasks; i++) {
         buffer.push(1);
@@ -72,7 +68,7 @@ void producer(CircleBuffer &buffer, int num_tasks, int thread_num) {
     std::cout << elapsed.count() << " ms for producer " << thread_num << "\n";
 }
 
-void consumer(CircleBuffer &buffer, int &local_counter, int all_tasks, int thread_num) {
+void consumer(BoundedBuffer &buffer, int &local_counter, int all_tasks, int thread_num) {
     auto start = std::chrono::high_resolution_clock::now();
     while(true) {
         uint8_t val = 0;
@@ -90,7 +86,7 @@ void consumer(CircleBuffer &buffer, int &local_counter, int all_tasks, int threa
 }
 
 int main(int argc, const char * argv[]) {
-    CircleBuffer buffer(250);
+    BoundedBuffer buffer(250);
     int producer_threads = 4;
     int consumer_threads = 4;
     int num_tasks = 4 * 1024 * 1024 / producer_threads;

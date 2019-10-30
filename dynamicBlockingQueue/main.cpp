@@ -12,7 +12,6 @@
 #include <atomic>
 #include <thread>
 #include <chrono>
-#include <cassert>
 using namespace std;
 
 mutex q_mtx;

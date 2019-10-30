@@ -1,6 +1,6 @@
 //
 //  main.cpp
-//  nonblocking_counter
+//  nonblockingCounter
 //
 //  Created by Veronika on 10/7/19.
 //  Copyright © 2019 Veronika. All rights reserved.
