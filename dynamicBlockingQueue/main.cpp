@@ -27,7 +27,7 @@ void producer(queue<uint8_t> &q, int task_number, int thr_number) {
     }
     auto end = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double, std::milli> elapsed = end - start;
-    std::cout << elapsed.count() << " ms for producer " << thr_number <<" thread \n";
+    printf("%f ms for producer %d\n", elapsed.count(), thr_number);
 }
 
 bool pop(queue<uint8_t> &q, uint8_t &task) {
@@ -52,7 +52,7 @@ void consumer(queue<uint8_t> &q, int &local_counter, int all_tasks, int thr_num)
         if (!is_pop && global_counter == all_tasks) {
             auto end = std::chrono::high_resolution_clock::now();
             std::chrono::duration<double, std::milli> elapsed = end - start;
-            std::cout << elapsed.count() << " ms for consumer " << thr_num << "\n";
+            printf("%f ms for consumer %d\n", elapsed.count(), thr_num);
             return;
         }
         else if (is_pop) {

@@ -16,17 +16,23 @@ void lock_counter(int numTasks, int numThreads, bool verbose = false) {
     std::vector<uint8_t> array(numTasks, 0);
     std::vector<std::thread> threads(numThreads);
     std::mutex mtx;
-    unsigned int shared_counter = 0;
-    unsigned int loops = numTasks / numThreads;
+    int shared_counter = 0;
     
     auto start = std::chrono::high_resolution_clock::now();
     for (int i = 0; i < numThreads; i++) {
         threads[i] = std::thread([&] {
-            for (int i = 0; i < loops; i++) {
+            while (true) {
+                int copy_counter;
                 mtx.lock();
-                array[shared_counter++] += 1;
+                copy_counter = shared_counter;
+                if (copy_counter == numTasks) {
+                    mtx.unlock();
+                    return;
+                }
+                shared_counter++;
                 //std::this_thread::sleep_for(std::chrono::nanoseconds(10));
                 mtx.unlock();
+                array[copy_counter] += 1;
             }
         });
     }

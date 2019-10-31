@@ -10,9 +10,9 @@
 #include <omp.h>
 #include <vector>
 
-#define a_rows_num 5
-#define a_cols_num 6
-#define b_elem_num 6
+#define a_rows_num 1024
+#define a_cols_num 1024 * 16
+#define b_elem_num 1024 * 16
 
 using namespace std;
 
@@ -24,19 +24,34 @@ int main(int argc, const char * argv[]) {
     vector<int> b_vector(b_elem_num, 1);
     vector<int> c_vector(a_rows_num);
     
-    #pragma omp parallel
-    {
-        #pragma omp for
-        for (int i = 0; i < a_rows_num; i++) {
-            int row_sum = 0;
-            for (int j = 0; j < a_cols_num; j++) {
-                row_sum += a_matrix[i][j] * b_vector[j];
-            }
-            c_vector[i] = row_sum;
+    alignas(128) int i;
+    alignas(128) int j;
+    
+    double total_begin = omp_get_wtime();
+    
+    #pragma omp parallel for default(shared) private(i, j)
+    for (i = 0; i < a_rows_num; i++) {
+        int row_sum = 0;
+        for (j = 0; j < a_cols_num; j++) {
+            row_sum += a_matrix[i][j] * b_vector[j];
+        }
+        c_vector[i] = row_sum;
+    }
+    
+    double total_end = omp_get_wtime();
+
+    
+    double total_begin1 = omp_get_wtime();
+    for (int i = 0; i < a_rows_num; i++) {
+        for (int j = 0; j < a_cols_num; j++) {
+            c_vector[i] += a_matrix[i][j] * b_vector[j];
         }
     }
-    for (auto elem: c_vector) {
-        cout << elem << " ";
-    }
+    double total_end1 = omp_get_wtime();
+    
+    printf("Speed up - %f\n", (total_end1 - total_begin1) / (total_end - total_begin));
+//    for (auto elem: c_vector) {
+//        cout << elem << "\n";
+//    }
     return 0;
 }

@@ -13,30 +13,28 @@
 using namespace std;
 
 struct BoundedBuffer {
-    int * buffer;
+    uint8_t * buffer;
     int capacity;
     /*
         The buffer is empty if front_count == rear_count;
         The buffer is full if front_count + capacity == rear_count
      */
-    atomic_int front_count;
-    atomic_int rear_count;
-    atomic_int overall_count {0};
+    aligns(128) atomic_int front_count;
+    aligns(128) atomic_int rear_count;
 
     BoundedBuffer(int capacity): capacity(capacity), front_count{0}, rear_count{0} {
-        buffer = new int[capacity];
+        buffer = new uint8_t[capacity];
     }
     
     ~BoundedBuffer() {
         delete [] buffer;
     }
     
-    void push(int value) {
+    void push(uint8_t value) {
         while(true) {
             int rear = rear_count.load();
-            int front = front_count.load();
             // if buffer is full
-            if (rear == front + capacity)
+            if (rear == front_count + capacity)
                 continue;
             if (rear_count.compare_exchange_strong(rear, rear + 1)) {
                 buffer[rear % capacity] = value;
@@ -45,16 +43,14 @@ struct BoundedBuffer {
         }
     }
     
-    bool pop(int &value) {
+    bool pop(uint8_t &value) {
         while (true) {
-            int rear = rear_count.load();
             int front = front_count.load();
             // if buffer is empty
-            if (rear == front) {
+            if (rear_count == front) {
                 this_thread::sleep_for(std::chrono::milliseconds(1));
-                rear = rear_count.load();
                 front = front_count.load();
-                if (rear == front) {
+                if (rear_count == front) {
                     return false;
                 }
             }
@@ -73,18 +69,18 @@ void producer(BoundedBuffer &buffer, int num_tasks, int thread_num) {
     }
     auto end = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double, std::milli> elapsed = end - start;
-    std::cout << elapsed.count() << " ms for producer " << thread_num << "\n";
+    printf("%f ms for producer %d\n", elapsed.count(), thread_num);
 }
 
 void consumer(BoundedBuffer &buffer, int &local_counter, int all_tasks, int thread_num) {
     auto start = std::chrono::high_resolution_clock::now();
     while(true) {
-        int val = 0;
+        uint8_t val = 0;
         bool is_pop = buffer.pop(val);
         if(!is_pop && buffer.rear_count == all_tasks) {
             auto end = std::chrono::high_resolution_clock::now();
             std::chrono::duration<double, std::milli> elapsed = end - start;
-            std::cout << elapsed.count() << " ms for consumer " << thread_num << "\n";
+            printf("%f ms for consumer %d\n", elapsed.count(), thread_num);
             return;
         }
         else if (is_pop) {
@@ -94,7 +90,7 @@ void consumer(BoundedBuffer &buffer, int &local_counter, int all_tasks, int thre
 }
 
 int main(int argc, const char * argv[]) {
-    BoundedBuffer buffer(4);
+    BoundedBuffer buffer(16);
     int producer_threads = 4;
     int consumer_threads = 4;
     int num_tasks = 4 * 1024 * 1024  / producer_threads;

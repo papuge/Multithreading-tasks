@@ -65,7 +65,7 @@ void producer(BoundedBuffer &buffer, int num_tasks, int thread_num) {
     }
     auto end = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double, std::milli> elapsed = end - start;
-    std::cout << elapsed.count() << " ms for producer " << thread_num << "\n";
+    printf("%f ms for producer %d\n", elapsed.count(), thread_num);
 }
 
 void consumer(BoundedBuffer &buffer, int &local_counter, int all_tasks, int thread_num) {
@@ -76,7 +76,7 @@ void consumer(BoundedBuffer &buffer, int &local_counter, int all_tasks, int thre
         if(!is_pop && buffer.overall_count == all_tasks) {
             auto end = std::chrono::high_resolution_clock::now();
             std::chrono::duration<double, std::milli> elapsed = end - start;
-            std::cout << elapsed.count() << " ms for consumer " << thread_num << "\n";
+            printf("%f ms for consumer %d\n", elapsed.count(), thread_num);
             return;
         }
         else if (is_pop) {

@@ -22,9 +22,10 @@ void lockfree_counter(int numTasks, int numThreads, bool verbose = false) {
     auto start = std::chrono::high_resolution_clock::now();
     for (int i = 0; i < numThreads; i++) {
         threads[i] = std::thread([&] {
-            for (int i = 0; i < loops; i++) {
-                array[atomic_counter.fetch_add(1)] += 1;
-                std::this_thread::sleep_for(std::chrono::nanoseconds(10));
+            int copy;
+            while (copy = atomic_counter.fetch_add(1) < numTasks) {
+                array[copy] += 1;
+                //std::this_thread::sleep_for(std::chrono::nanoseconds(10));
             }
         });
     }
