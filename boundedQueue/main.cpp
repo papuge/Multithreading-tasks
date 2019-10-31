@@ -86,9 +86,9 @@ void consumer(BoundedBuffer &buffer, int &local_counter, int all_tasks, int thre
 }
 
 int main(int argc, const char * argv[]) {
-    BoundedBuffer buffer(250);
-    int producer_threads = 4;
-    int consumer_threads = 4;
+    BoundedBuffer buffer(16);
+    int producer_threads = 2;
+    int consumer_threads = 2;
     int num_tasks = 4 * 1024 * 1024 / producer_threads;
     int sum = 0;
     vector<thread> producers(producer_threads);
