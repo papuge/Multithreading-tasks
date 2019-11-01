@@ -17,7 +17,6 @@ void lockfree_counter(int numTasks, int numThreads, bool verbose = false) {
     std::vector<std::thread> threads(numThreads);
     std::mutex mtx;
     std::atomic<unsigned int> atomic_counter {0};
-    unsigned int loops = numTasks / numThreads;
     
     auto start = std::chrono::high_resolution_clock::now();
     for (int i = 0; i < numThreads; i++) {
