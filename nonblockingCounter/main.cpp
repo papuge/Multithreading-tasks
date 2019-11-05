@@ -21,9 +21,13 @@ void lockfree_counter(int numTasks, int numThreads, bool verbose = false) {
     auto start = std::chrono::high_resolution_clock::now();
     for (int i = 0; i < numThreads; i++) {
         threads[i] = std::thread([&] {
-            int copy;
-            while (copy = atomic_counter.fetch_add(1) < numTasks) {
-                array[copy] += 1;
+            int copy = 0;
+            while (true) {
+                copy = atomic_counter.fetch_add(1);
+                if (copy >= numTasks) {
+                    return;
+                }
+                array.at(copy)++;
                 //std::this_thread::sleep_for(std::chrono::nanoseconds(10));
             }
         });
@@ -35,9 +39,19 @@ void lockfree_counter(int numTasks, int numThreads, bool verbose = false) {
     std::chrono::duration<double, std::milli> elapsed = end - start;
     std::cout << elapsed.count() << " ms for "
             << numThreads << " threads \n";
+    // std::cout << "at.c " << atomic_counter << "\n";
     if (verbose)
         for (auto a: array)
             std::cout << unsigned(a) << " ";
+    
+    if (std::all_of(array.cbegin(), array.cend(), [](int i) {
+        return i == 1;
+    })) {
+        std::cout << "All are 1" << std::endl;
+    } else {
+        std::cout << "Not all are 1" << std::endl;
+    }
+    
 }
 
 int main(int argc, const char * argv[]) {

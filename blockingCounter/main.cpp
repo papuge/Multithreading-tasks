@@ -46,6 +46,14 @@ void lock_counter(int numTasks, int numThreads, bool verbose = false) {
     if (verbose)
         for (auto a: array)
             std::cout << unsigned(a) << " ";
+    
+    if (std::all_of(array.cbegin(), array.cend(), [](int i) {
+        return i == 1;
+    })) {
+        std::cout << "All are 1" << std::endl;
+    } else {
+        std::cout << "Not all are 1" << std::endl;
+    }
 }
 
 int main(int argc, const char * argv[]) {
