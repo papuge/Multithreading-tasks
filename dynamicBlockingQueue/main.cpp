@@ -34,9 +34,9 @@ bool pop(queue<uint8_t> &q, uint8_t &task) {
     lock_guard<mutex> lock(q_mtx);
     if (q.empty()) {
         this_thread::sleep_for(std::chrono::milliseconds(1));
+        if (q.empty())
+            return false;
     }
-    if (q.empty())
-        return false;
     
     task = q.front();
     q.pop();
@@ -65,7 +65,7 @@ int main(int argc, const char * argv[]) {
     cout << "Start\n";
     queue<uint8_t> blocking_queue;
     int producer_threads = 1;
-    int consumer_threads = 1;
+    int consumer_threads = 2;
     int num_tasks = 4 * 1024 * 1024 / producer_threads;
     int sum = 0;
     vector<thread> producers(producer_threads);

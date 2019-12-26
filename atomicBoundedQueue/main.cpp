@@ -13,17 +13,19 @@
 using namespace std;
 
 struct BoundedBuffer {
-    uint8_t * buffer;
+    atomic<uint8_t> * buffer;
     int capacity;
     /*
         The buffer is empty if front_count == rear_count;
         The buffer is full if front_count + capacity == rear_count
      */
-    aligns(128) atomic_int front_count;
-    aligns(128) atomic_int rear_count;
+    atomic_int front_count;
+    atomic_int rear_count;
 
     BoundedBuffer(int capacity): capacity(capacity), front_count{0}, rear_count{0} {
-        buffer = new uint8_t[capacity];
+        buffer = new atomic<uint8_t>[capacity];
+        for(int i = 0; i < capacity; i++)
+            buffer[i] = 0;
     }
     
     ~BoundedBuffer() {
@@ -36,9 +38,14 @@ struct BoundedBuffer {
             // if buffer is full
             if (rear == front_count + capacity)
                 continue;
-            if (rear_count.compare_exchange_strong(rear, rear + 1)) {
-                buffer[rear % capacity] = value;
-                return;
+            
+            uint8_t x = buffer[rear % capacity].load();
+            if (x == 0) {
+                if(rear_count.compare_exchange_strong(rear, rear + 1)) {
+                    if(buffer[rear % capacity].compare_exchange_strong(x, value)) {
+                        return;
+                    }
+                }
             }
         }
     }
@@ -54,9 +61,14 @@ struct BoundedBuffer {
                     return false;
                 }
             }
-            if (front_count.compare_exchange_strong(front, front + 1)) {
-                value = buffer[front % capacity];
-                return true;
+            uint8_t x = buffer[front % capacity].load();
+            if(x != 0) {
+                if(front_count.compare_exchange_strong(front, front + 1)) {
+                    if(buffer[front % capacity].compare_exchange_strong(x, 0)) {
+                        value = x;
+                        return true;
+                    }
+                }
             }
         }
     }

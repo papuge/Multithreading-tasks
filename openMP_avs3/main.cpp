@@ -11,8 +11,8 @@
 #include <vector>
 
 #define a_rows_num 1024
-#define a_cols_num 1024 * 16
-#define b_elem_num 1024 * 16
+#define a_cols_num 1024
+#define b_elem_num 1024
 
 using namespace std;
 
